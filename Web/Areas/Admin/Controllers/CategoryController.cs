@@ -1,24 +1,27 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Web.Data;
+using Web.DataAccess.Data;
+using Web.DataAccess.Repository;
+using Web.DataAccess.Repository.IRepository;
 using Web.Models;
 
-namespace Web.Controllers
+namespace Web.Areas.Admin.Controllers
 {
+    [Area("Admin")]
     public class CategoryController : Controller
     {
-        private readonly ApplicationDbContext _db;
-        public CategoryController(ApplicationDbContext db)
+        private readonly IUnitOfWork _unitOfWork;
+        public CategoryController(IUnitOfWork unitOfWork)
         {
-            _db = db;
+            _unitOfWork = unitOfWork;
         }
 
-        public IActionResult Index()                                
+        public IActionResult Index()
         {
-            List<Category> objCategoryList = _db.Categories.ToList();
+            List<Category> objCategoryList = _unitOfWork.Category.GetAll().ToList();
             return View(objCategoryList);
         }
-        
+
 
         public IActionResult Create()
         {
@@ -27,14 +30,15 @@ namespace Web.Controllers
         [HttpPost]
         public IActionResult Create(Category category)
         {
-            if(category.Name == category.DisplayOrder.ToString())
+            if (category.Name == category.DisplayOrder.ToString())
             {
                 ModelState.AddModelError("name", "The DisplayOrder cannot exactly match the Name");
             }
             if (ModelState.IsValid)
             {
-                _db.Categories.Add(category);
-                _db.SaveChanges();
+                _unitOfWork.Category.Add(category);
+                _unitOfWork.Save();
+                TempData["success"] = "Category created successfully";
                 return RedirectToAction("Index", "Category");
             }
             return View();
@@ -47,7 +51,7 @@ namespace Web.Controllers
             {
                 return NotFound();
             }
-            Category? category = _db.Categories.FirstOrDefault(c => c.Id == id);
+            Category? category = _unitOfWork.Category.Get(c => c.Id == id);
             return View(category);
         }
         [HttpPost]
@@ -55,8 +59,9 @@ namespace Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                _db.Categories.Update(category);
-                _db.SaveChanges();
+                _unitOfWork.Category.Update(category);
+                _unitOfWork.Save();
+                TempData["success"] = "Category updated successfully";
                 return RedirectToAction("Index", "Category");
             }
             return View();
@@ -69,8 +74,8 @@ namespace Web.Controllers
             {
                 return NotFound();
             }
-            Category? category = _db.Categories.FirstOrDefault(c => c.Id == id);
-            if(category == null)
+            Category? category = _unitOfWork.Category.Get(c => c.Id == id);
+            if (category == null)
             {
                 return NotFound();
             }
@@ -79,13 +84,14 @@ namespace Web.Controllers
         [HttpPost, ActionName("Delete")]
         public IActionResult DeletePOST(int? id)
         {
-            Category? obj = _db.Categories.Find(id);
-            if(obj == null)
+            Category? obj = _unitOfWork.Category.Get(c => c.Id == id);
+            if (obj == null)
             {
                 return NotFound();
             }
-            _db.Categories.Remove(obj);
-            _db.SaveChanges();
+            _unitOfWork.Category.Remove(obj);
+            _unitOfWork.Save();
+            TempData["success"] = "Category deleted successfully";
             return RedirectToAction("Index");
         }
 

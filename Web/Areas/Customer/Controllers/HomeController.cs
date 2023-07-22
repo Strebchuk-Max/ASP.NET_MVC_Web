@@ -2,8 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using Web.Models;
 
-namespace Web.Controllers
+namespace Web.Areas.Customer.Controllers
 {
+    [Area("Customer")]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -11,7 +12,7 @@ namespace Web.Controllers
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
-        } 
+        }
 
         public IActionResult Index()
         {
