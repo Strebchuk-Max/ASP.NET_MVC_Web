@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Collections.Generic;
 using Web.DataAccess.Repository.IRepository;
 using Web.Models;
+using Web.Models.ViewModels;
 
 namespace Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class ProductController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork _unitOfWork; 
         public ProductController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -16,26 +19,43 @@ namespace Web.Areas.Admin.Controllers
         public IActionResult Index()
         {
             List<Product> objProductList = _unitOfWork.Product.GetAll().ToList();
+            
             return View(objProductList);
         }
 
 
         public IActionResult Create()
-        {
-            return View();
+        {           
+            ProductVM productVM = new()
+            {
+                CategoryList = _unitOfWork.Category.GetAll().Select(u => new SelectListItem
+                {
+                    Text = u.Name,
+                    Value = u.Id.ToString()
+                }),
+                Product = new Product()
+            };
+            return View(productVM);
         }
         [HttpPost]
-        public IActionResult Create(Product product)
+        public IActionResult Create(ProductVM productVM)
         {       
             if (ModelState.IsValid)
             {
-                _unitOfWork.Product.Add(product);
+                _unitOfWork.Product.Add(productVM.Product);
                 _unitOfWork.Save();
                 TempData["success"] = "Product created successfully";
                 return RedirectToAction("Index", "Product");
             }
-            return View();
-
+            else
+            {
+                productVM.CategoryList = _unitOfWork.Category.GetAll().Select(u => new SelectListItem
+                {
+                    Text = u.Name,
+                    Value = u.Id.ToString()
+                });
+                return View(productVM);
+            }       
         }
 
         public IActionResult Edit(int? id)
@@ -44,23 +64,29 @@ namespace Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
-            Product? product = _unitOfWork.Product.Get(c => c.Id == id);
+            ProductVM product = _unitOfWork.ProductV.Get(c => c.Id == id);
             return View(product);
         }
         [HttpPost]
-        public IActionResult Edit(Product product)
+        public IActionResult Edit(ProductVM productVM)
         {
             if (ModelState.IsValid)
             {
-                _unitOfWork.Product.Update(product);
+                _unitOfWork.Product.Update(productVM.Product);
                 _unitOfWork.Save();
                 TempData["success"] = "Product updated successfully";
                 return RedirectToAction("Index", "Product");
             }
-            return View();
-
+            else
+            {
+                productVM.CategoryList = _unitOfWork.Category.GetAll().Select(u => new SelectListItem
+                {
+                    Text = u.Name,
+                    Value = u.Id.ToString()
+                });
+                return View(productVM);
+            }
         }
-
         public IActionResult Delete(int? id)
         {
             if (id == null || id == 0)
